@@ -37,7 +37,6 @@
 typedef struct lcore_parameters {
 	uint8_t qid;
 	uint16_t portid;
-	uint64_t nr_elements;
 } __rte_cache_aligned lcore_param;
 
 typedef struct timestamp_node_t {

@@ -155,6 +155,7 @@ static int lcore_tx(void *arg) {
 	lcore_param *tx_conf = (lcore_param *) arg;
 	uint16_t portid = tx_conf->portid;
 	uint8_t qid = tx_conf->qid;
+	uint64_t nr_elements = rate * duration;
 
 	uint16_t nb_tx;
 	struct rte_mbuf *pkt;
@@ -192,7 +193,7 @@ static int lcore_tx(void *arg) {
 		}
 
 		// update the counter
-		next_tsc += interarrival_gap[i];
+		next_tsc += interarrival_array[i];
 	}
 
 	return 0;
@@ -218,8 +219,8 @@ int main(int argc, char **argv) {
 	uint16_t portid = 0;
 	init_DPDK(portid, nr_queues);
 
-	// allocate nodes for incoming packets
-	allocate_incoming_nodes();
+	// create nodes for incoming packets
+	create_incoming_array();
 
 	// create flow indexes array
 	create_flow_indexes_array();
