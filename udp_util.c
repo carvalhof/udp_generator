@@ -1,19 +1,5 @@
 #include "udp_util.h"
 
-// // Shuffle the UDP source port array
-// void shuffle(uint16_t* arr, uint32_t n) {
-// 	if(n < 2) {
-// 		return;
-// 	}
-
-// 	for(uint32_t i = 0; i < n - 1; i++) {
-// 		uint32_t j = i + rte_rand() / (UINT64_MAX / (n - i) + 1);
-// 		uint16_t tmp = arr[j];
-// 		arr[j] = arr[i];
-// 		arr[i] = tmp;
-// 	}
-// }
-
 // Create and initialize the Control Blocks for all flows
 void init_blocks() {
 	// allocate the all control block structure previosly
@@ -25,9 +11,6 @@ void init_blocks() {
 	for(uint32_t i = 0; i < nr_flows; i++) {
 		src_ports[i] = rte_cpu_to_be_16((i % nr_flows) + 1);
 	}
-
-	// // shuffle port array
-	// shuffle(ports, nr_flows);
 
 	for(uint32_t i = 0; i < nr_flows; i++) {
 		src_udp_port = src_ports[i];

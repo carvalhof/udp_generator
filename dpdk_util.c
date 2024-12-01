@@ -186,58 +186,58 @@ void print_dpdk_stats(uint32_t portid) {
 
 // Create and fill rte_flow to send to the NIC
 void insert_flow(uint16_t portid, uint32_t i) {
-	int ret;
-	int act_idx = 0;
-	int pattern_idx = 0;
+	// int ret;
+	// int act_idx = 0;
+	// int pattern_idx = 0;
 	
-	struct rte_flow_attr attr = {};
-	struct rte_flow_error err = {};
-	struct rte_flow_item pattern[MAX_RTE_FLOW_PATTERN] = {};
-	struct rte_flow_action action[MAX_RTE_FLOW_ACTIONS] = {};
+	// struct rte_flow_attr attr = {};
+	// struct rte_flow_error err = {};
+	// struct rte_flow_item pattern[MAX_RTE_FLOW_PATTERN] = {};
+	// struct rte_flow_action action[MAX_RTE_FLOW_ACTIONS] = {};
 
-	attr.egress = 0;
-	attr.ingress = 1;
+	// attr.egress = 0;
+	// attr.ingress = 1;
 
-	action[act_idx].type= RTE_FLOW_ACTION_TYPE_QUEUE;
-	action[act_idx].conf = &control_blocks[i].flow_queue_action;
-	act_idx++;
+	// action[act_idx].type= RTE_FLOW_ACTION_TYPE_QUEUE;
+	// action[act_idx].conf = &control_blocks[i].flow_queue_action;
+	// act_idx++;
 
-	action[act_idx].type = RTE_FLOW_ACTION_TYPE_MARK;
-	action[act_idx].conf = &control_blocks[i].flow_mark_action;
-	act_idx++;
+	// action[act_idx].type = RTE_FLOW_ACTION_TYPE_MARK;
+	// action[act_idx].conf = &control_blocks[i].flow_mark_action;
+	// act_idx++;
 
-	action[act_idx].type = RTE_FLOW_ACTION_TYPE_END;
-	action[act_idx].conf = NULL;
-	act_idx++;
+	// action[act_idx].type = RTE_FLOW_ACTION_TYPE_END;
+	// action[act_idx].conf = NULL;
+	// act_idx++;
 
-	pattern[pattern_idx].type = RTE_FLOW_ITEM_TYPE_ETH;
-	pattern_idx++;
+	// pattern[pattern_idx].type = RTE_FLOW_ITEM_TYPE_ETH;
+	// pattern_idx++;
 
-	pattern[pattern_idx].type = RTE_FLOW_ITEM_TYPE_IPV4;
-	pattern[pattern_idx].spec = &control_blocks[i].flow_ipv4;
-	pattern[pattern_idx].mask = &control_blocks[i].flow_ipv4_mask;
-	pattern_idx++;
+	// pattern[pattern_idx].type = RTE_FLOW_ITEM_TYPE_IPV4;
+	// pattern[pattern_idx].spec = &control_blocks[i].flow_ipv4;
+	// pattern[pattern_idx].mask = &control_blocks[i].flow_ipv4_mask;
+	// pattern_idx++;
 
-	pattern[pattern_idx].type = RTE_FLOW_ITEM_TYPE_UDP;
-	pattern[pattern_idx].spec = &control_blocks[i].flow_udp;
-	pattern[pattern_idx].mask = &control_blocks[i].flow_udp_mask;
-	pattern_idx++;
+	// pattern[pattern_idx].type = RTE_FLOW_ITEM_TYPE_UDP;
+	// pattern[pattern_idx].spec = &control_blocks[i].flow_udp;
+	// pattern[pattern_idx].mask = &control_blocks[i].flow_udp_mask;
+	// pattern_idx++;
 
-	pattern[pattern_idx].type = RTE_FLOW_ITEM_TYPE_END;
-	pattern_idx++;
+	// pattern[pattern_idx].type = RTE_FLOW_ITEM_TYPE_END;
+	// pattern_idx++;
 
-	// validate the rte_flow
-	ret = rte_flow_validate(portid, &attr, pattern, action, &err);
-	if(ret < 0) {
-		RTE_LOG(ERR, UDP_GENERATOR, "Flow validation failed %s\n", err.message);
-		return;
-	}
+	// // validate the rte_flow
+	// ret = rte_flow_validate(portid, &attr, pattern, action, &err);
+	// if(ret < 0) {
+	// 	RTE_LOG(ERR, UDP_GENERATOR, "Flow validation failed %s\n", err.message);
+	// 	return;
+	// }
 
-	// create the flow and insert to the NIC
-	struct rte_flow *rule = rte_flow_create(portid, &attr, pattern, action, &err);
-	if (rule == NULL) {
-		RTE_LOG(ERR, UDP_GENERATOR, "Flow creation return %s\n", err.message);
-	}
+	// // create the flow and insert to the NIC
+	// struct rte_flow *rule = rte_flow_create(portid, &attr, pattern, action, &err);
+	// if (rule == NULL) {
+	// 	RTE_LOG(ERR, UDP_GENERATOR, "Flow creation return %s\n", err.message);
+	// }
 }
 
 // create a DPDK ring for the RX thread
