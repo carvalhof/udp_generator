@@ -131,7 +131,6 @@ static int lcore_rx(void *arg) {
 	uint64_t now;
 	uint16_t nb_rx;
 	struct rte_mbuf *pkts[BURST_SIZE];
-	struct rte_ring *rx_ring = rx_rings[qid];
 	
 	while(!quit_rx) {
 		// retrieve the packets from the NIC
@@ -156,7 +155,6 @@ static int lcore_tx(void *arg) {
 	lcore_param *tx_conf = (lcore_param *) arg;
 	uint16_t portid = tx_conf->portid;
 	uint8_t qid = tx_conf->qid;
-	uint64_t nr_elements = tx_conf->nr_elements;
 
 	uint64_t i = 0;
 	uint16_t n = 1;
@@ -167,49 +165,43 @@ static int lcore_tx(void *arg) {
 	uint64_t *interarrival_gap = interarrival_array[qid];
 	uint64_t next_tsc = rte_rdtsc() + interarrival_gap[i];
 
-	while(!quit_tx) { 
-		// reach the limit
-		if(unlikely(i >= nr_elements)) {
-			break;
-		}
+	struct rte_mbuf *pkt;
 
-		// choose the flow to send
-		uint16_t flow_id = flow_indexes[i];
+	uint64_t next_tsc = rte_rdtsc() + interarrival_array[0];
 
-		// generate packets
-		for(; nb_pkts < n; nb_pkts++) {
-			pkts[nb_pkts] = rte_pktmbuf_alloc(pktmbuf_pool);
-			// fill the packet with the flow information
-			fill_udp_packet(flow_id, pkts[nb_pkts]);
-			// fill the payload to gather server information
-			fill_payload_pkt(pkts[nb_pkts], 2, flow_id);
-		}
-
+	for(uint64_t i = 0; i < nr_elements; i++) {
 		// unable to keep up with the requested rate
 		if(unlikely(rte_rdtsc() > (next_tsc + 5*TICKS_PER_US))) {
 			// count this batch as dropped
 			nr_never_sent++;
-			next_tsc += interarrival_gap[i++];
+			next_tsc += (interarrival_array[i] + TICKS_PER_US);
 			continue;
 		}
 
-		// fill the timestamp into the packet payload
-		for(int j = 0; j < nb_pkts; j++) {
-			fill_payload_pkt(pkts[j], 0, next_tsc);
-		}
+		// choose the flow to send
+		uint16_t flow_id = flow_indexes_array[i];
+
+		// allocated the packet
+		pkt = rte_pktmbuf_alloc(pktmbuf_pool_tx);
+
+		// fill the packet with the flow information
+		fill_udp_packet(flow_id, pkt);
+
+		// fill the payload to gather server information
+		fill_payload_pkt(pkt, 0, next_tsc);
+		fill_payload_pkt(pkt, 2, (uint64_t) flow_id);
 
 		// sleep for while
-		while (rte_rdtsc() < next_tsc) {  }
+		while (rte_rdtsc() < next_tsc) { }
 
-		// send the batch
-		nb_tx = rte_eth_tx_burst(portid, qid, pkts, nb_pkts);
-		if(unlikely(nb_tx != nb_pkts)) {
+		// send the packet
+		nb_tx = rte_eth_tx_burst(portid, qid, &pkt, 1);
+		if(unlikely(nb_tx != 1)) {
 			rte_exit(EXIT_FAILURE, "Cannot send the target packets.\n");
 		}
 
 		// update the counter
-		nb_pkts = 0;
-		next_tsc += interarrival_gap[i++];
+		next_tsc += interarrival_gap[i];
 	}
 
 	return 0;
