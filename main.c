@@ -29,8 +29,9 @@ uint32_t *interarrival_array;
 
 // Heap and DPDK allocated
 node_t *incoming_array;
-uint64_t *incoming_idx_array;
-struct rte_mempool *pktmbuf_pool;
+uint32_t incoming_idx;
+struct rte_mempool *pktmbuf_pool_rx;
+struct rte_mempool *pktmbuf_pool_tx;
 control_block_t *control_blocks;
 
 // Internal threads variables
@@ -49,7 +50,7 @@ struct rte_ether_addr dst_eth_addr;
 struct rte_ether_addr src_eth_addr;
 
 // Process the incoming UDP packet
-int process_rx_pkt(struct rte_mbuf *pkt, node_t *incoming, uint64_t *incoming_idx) {
+int process_rx_pkt(struct rte_mbuf *pkt, node_t *incoming, uint32_t *incoming_idx) {
 	// process only UDP packets
 	struct rte_ipv4_hdr *ipv4_hdr = rte_pktmbuf_mtod_offset(pkt, struct rte_ipv4_hdr *, sizeof(struct rte_ether_hdr));
 	if(unlikely(ipv4_hdr->next_proto_id != IPPROTO_UDP)) {
@@ -95,6 +96,7 @@ static int lcore_rx_ring(void *arg) {
 	uint8_t qid = rx_conf->qid;
 
 	uint16_t nb_rx;
+	struct rte_mbuf *pkts[BURST_SIZE];
 
 	incoming_idx = 0;
 
