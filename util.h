@@ -31,7 +31,7 @@
 #define LOGNORMAL_VALUE				4
 #define PARETO_VALUE				5
 #define IPV4_ADDR(a, b, c, d)		(((d & 0xff) << 24) | ((c & 0xff) << 16) | ((b & 0xff) << 8) | (a & 0xff))
-
+#define MIN_PKTSIZE					14+20+4+24
 #define PAYLOAD_OFFSET				14+20+4
 
 typedef struct lcore_parameters {

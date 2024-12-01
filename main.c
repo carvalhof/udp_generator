@@ -156,17 +156,8 @@ static int lcore_tx(void *arg) {
 	uint16_t portid = tx_conf->portid;
 	uint8_t qid = tx_conf->qid;
 
-	uint64_t i = 0;
-	uint16_t n = 1;
 	uint16_t nb_tx;
-	uint16_t nb_pkts = 0;
-	struct rte_mbuf *pkts[BURST_SIZE];
-	uint16_t *flow_indexes = flow_indexes_array[qid];
-	uint64_t *interarrival_gap = interarrival_array[qid];
-	uint64_t next_tsc = rte_rdtsc() + interarrival_gap[i];
-
 	struct rte_mbuf *pkt;
-
 	uint64_t next_tsc = rte_rdtsc() + interarrival_array[0];
 
 	for(uint64_t i = 0; i < nr_elements; i++) {
