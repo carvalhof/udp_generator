@@ -39,38 +39,6 @@ static double process_double_arg(const char *arg) {
 	return strtod(arg, &end);
 }
 
-// Allocate and create all application nodes
-void create_application_array() {
-	uint64_t nr_elements = rate * duration;
-
-	application_array = (application_node_t*) rte_malloc(NULL, nr_elements * sizeof(application_node_t), 64);
-	if(application_array == NULL) {
-		rte_exit(EXIT_FAILURE, "Cannot alloc the application array.\n");
-	}
-
-	if(srv_distribution == CONSTANT_VALUE) {
-		for(uint32_t j = 0; j < nr_elements; j++) {
-			application_array[j].iterations = srv_iterations0;
-			application_array[j].randomness = rte_rand();
-		}
-	} else if(srv_distribution == EXPONENTIAL_VALUE) {
-		for(uint32_t j = 0; j < nr_elements; j++) {
-			double u = rte_drand();
-			application_array[j].iterations = (uint64_t) (-((double)srv_iterations0) * log(u));
-			application_array[j].randomness = rte_rand();
-		}
-	} else {
-		for(uint32_t j = 0; j < nr_elements; j++) {
-			double u = rte_drand();
-			if(u < srv_mode) {
-				application_array[j].iterations = srv_iterations0;
-			} else {
-				application_array[j].iterations = srv_iterations1;
-			}
-		}
-	}
-}
-
 // Allocate and create all nodes for incoming packets
 void create_incoming_array() {
 	incoming_array = (node_t*) rte_malloc(NULL, rate * duration * sizeof(node_t), 64);

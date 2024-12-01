@@ -24,22 +24,20 @@ uint32_t udp_payload_size;
 
 // General variables
 uint64_t TICKS_PER_US;
-uint16_t **flow_indexes_array;
-uint64_t **interarrival_array;
+uint16_t *flow_indexes_array;
+uint64_t *interarrival_array;
 
 // Heap and DPDK allocated
-node_t **incoming_array;
+node_t *incoming_array;
 uint64_t *incoming_idx_array;
 struct rte_mempool *pktmbuf_pool;
 control_block_t *control_blocks;
 
 // Internal threads variables
-volatile uint8_t quit_rx = 0;
-volatile uint8_t quit_tx = 0;
-volatile uint32_t ack_dup = 0;
-volatile uint32_t ack_empty = 0;
-volatile uint8_t quit_rx_ring = 0;
-volatile uint64_t nr_never_sent = 0;
+uint8_t quit_rx = 0;
+uint8_t quit_tx = 0;
+uint8_t quit_rx_ring = 0;
+uint32_t nr_never_sent = 0;
 lcore_param lcore_params[RTE_MAX_LCORE];
 struct rte_ring *rx_rings[RTE_MAX_LCORE];
 
@@ -76,10 +74,9 @@ int process_rx_pkt(struct rte_mbuf *pkt, node_t *incoming, uint64_t *incoming_id
 
 	// fill the node previously allocated
 	node_t *node = &incoming[(*incoming_idx)++];
-	node->flow_id = payload[2];
-	node->thread_id = payload[3];
 	node->timestamp_tx = t0;
 	node->timestamp_rx = t1;
+	node->flow_id = payload[2];
 
 	return 1;
 }
@@ -258,8 +255,8 @@ int main(int argc, char **argv) {
 	// start client (3-way handshake for each flow)
 	start_client(portid);
 
-	// create the DPDK rings for RX threads
-	create_dpdk_rings();
+	// create the DPDK ring for RX threads
+	create_dpdk_ring();
 
 	// start RX and TX threads
 	uint32_t id_lcore = rte_lcore_id();	
