@@ -25,7 +25,7 @@ uint32_t udp_payload_size;
 // General variables
 uint64_t TICKS_PER_US;
 uint16_t *flow_indexes_array;
-uint64_t *interarrival_array;
+uint32_t *interarrival_array;
 
 // Heap and DPDK allocated
 node_t *incoming_array;
@@ -39,7 +39,7 @@ uint8_t quit_tx = 0;
 uint8_t quit_rx_ring = 0;
 uint32_t nr_never_sent = 0;
 lcore_param lcore_params[RTE_MAX_LCORE];
-struct rte_ring *rx_rings[RTE_MAX_LCORE];
+struct rte_ring *rx_ring;
 
 // Connection variables
 uint16_t dst_udp_port;
@@ -95,18 +95,15 @@ static int lcore_rx_ring(void *arg) {
 	uint8_t qid = rx_conf->qid;
 
 	uint16_t nb_rx;
-	uint64_t *incoming_idx = &incoming_idx_array[qid];
-	node_t *incoming = incoming_array[qid];
-	struct rte_mbuf *pkts[BURST_SIZE];
-	struct rte_ring *rx_ring = rx_rings[qid];
+
+	incoming_idx = 0;
 
 	while(!quit_rx_ring) {
 		// retrieve packets from the RX core
 		nb_rx = rte_ring_sc_dequeue_burst(rx_ring, (void**) pkts, BURST_SIZE, NULL); 
 		for(int i = 0; i < nb_rx; i++) {
-			rte_prefetch_non_temporal(rte_pktmbuf_mtod(pkts[i], void *));
 			// process the incoming packet
-			process_rx_pkt(pkts[i], incoming, incoming_idx);
+			process_rx_pkt(pkts[i], incoming_array, &incoming_idx);
 			// free the packet
 			rte_pktmbuf_free(pkts[i]);
 		}
@@ -116,9 +113,8 @@ static int lcore_rx_ring(void *arg) {
 	do{
 		nb_rx = rte_ring_sc_dequeue_burst(rx_ring, (void**) pkts, BURST_SIZE, NULL);
 		for(int i = 0; i < nb_rx; i++) {
-			rte_prefetch_non_temporal(rte_pktmbuf_mtod(pkts[i], void *));
 			// process the incoming packet
-			process_rx_pkt(pkts[i], incoming, incoming_idx);
+			process_rx_pkt(pkts[i], incoming_array, &incoming_idx);
 			// free the packet
 			rte_pktmbuf_free(pkts[i]);
 		}
