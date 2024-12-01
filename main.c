@@ -217,7 +217,7 @@ int main(int argc, char **argv) {
 	}
 
 	// initialize DPDK
-	uint16_t portid = 0;
+	uint16_t portid = 1;
 	init_DPDK(portid, nr_queues);
 
 	// create nodes for incoming packets
