@@ -1,6 +1,6 @@
 # UDP_generator
 
-Follow these instructions to build the udp generator using DPDK 22.11 and CloudLab nodes
+Follow these instructions to build the udp generator using DPDK 23.11 and CloudLab nodes
 
 ## DPDK
 
