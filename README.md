@@ -2,6 +2,12 @@
 
 Follow these instructions to build the udp generator using DPDK 22.11 and CloudLab nodes
 
+## DPDK
+
+```bash
+./dpdk.sh
+```
+
 ## Building
 
 > **Make sure that `PKG_CONFIG_PATH` is configured properly.**
