@@ -92,9 +92,6 @@ void start_client(uint16_t portid) {
 
 // RX processing
 static int lcore_rx_ring(void *arg) {
-	lcore_param *rx_conf = (lcore_param *) arg;
-	uint8_t qid = rx_conf->qid;
-
 	uint16_t nb_rx;
 	struct rte_mbuf *pkts[BURST_SIZE];
 

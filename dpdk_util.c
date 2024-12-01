@@ -255,7 +255,7 @@ void create_dpdk_ring() {
 void clean_hugepages() {
 	rte_ring_free(rx_ring);
 	
-	rte_free(tcp_control_blocks);
+	rte_free(control_blocks);
 	rte_mempool_free(pktmbuf_pool_rx);
 	rte_mempool_free(pktmbuf_pool_tx);
 }

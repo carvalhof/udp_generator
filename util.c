@@ -32,12 +32,12 @@ static uint32_t process_int_arg(const char *arg) {
 	return strtoul(arg, &end, 10);
 }
 
-// Convert string type into double type
-static double process_double_arg(const char *arg) {
-	char *end;
+// // Convert string type into double type
+// static double process_double_arg(const char *arg) {
+// 	char *end;
 
-	return strtod(arg, &end);
-}
+// 	return strtod(arg, &end);
+// }
 
 // Allocate and create all nodes for incoming packets
 void create_incoming_array() {
@@ -113,7 +113,6 @@ void clean_heap() {
 	rte_free(incoming_array);
 	rte_free(flow_indexes_array);
 	rte_free(interarrival_array);
-	rte_free(application_array);
 }
 
 // Usage message
