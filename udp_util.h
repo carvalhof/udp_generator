@@ -45,7 +45,6 @@ extern struct rte_ether_addr dst_eth_addr;
 extern struct rte_ether_addr src_eth_addr;
 
 extern uint64_t nr_flows;
-extern uint64_t nr_queues;
 extern uint16_t nr_servers;
 extern uint32_t frame_size;
 extern uint32_t udp_payload_size;

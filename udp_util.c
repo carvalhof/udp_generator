@@ -39,7 +39,7 @@ void init_blocks() {
 		control_blocks[i].dst_port = rte_cpu_to_be_16(dst_udp_port + (i % nr_servers));
 
 		control_blocks[i].flow_mark_action.id = i;
-		control_blocks[i].flow_queue_action.index = i % nr_queues;
+		control_blocks[i].flow_queue_action.index = i;
 		control_blocks[i].flow_eth.type = ETH_IPV4_TYPE_NETWORK;
 		control_blocks[i].flow_eth_mask.type = 0xFFFF;
 		control_blocks[i].flow_ipv4.hdr.src_addr = control_blocks[i].dst_addr;

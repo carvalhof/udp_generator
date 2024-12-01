@@ -1,14 +1,14 @@
 #include "dpdk_util.h"
 
 // Initialize DPDK configuration
-void init_DPDK(uint16_t portid, uint64_t nr_queues) {
+void init_DPDK(uint16_t portid, uint32_t seed) {
 	// check the number of DPDK logical cores
 	if(rte_lcore_count() < min_lcores) {
 		rte_exit(EXIT_FAILURE, "No available worker cores!\n");
 	}
 
 	// init the seed for random numbers
-	rte_srand(SEED);
+	rte_srand(seed);
 
 	// get the number of cycles per us
 	TICKS_PER_US = rte_get_timer_hz() / 1000000;
@@ -19,34 +19,45 @@ void init_DPDK(uint16_t portid, uint64_t nr_queues) {
 
 	// allocate the packet pool
 	char s[64];
-	snprintf(s, sizeof(s), "mbuf_pool");
-	pktmbuf_pool = rte_pktmbuf_pool_create(s, PKTMBUF_POOL_ELEMENTS, MEMPOOL_CACHE_SIZE, 0,	RTE_MBUF_DEFAULT_BUF_SIZE, rte_socket_id());
+	snprintf(s, sizeof(s), "mbuf_pool_rx");
+	pktmbuf_pool_rx = rte_pktmbuf_pool_create(s, PKTMBUF_POOL_ELEMENTS, MEMPOOL_CACHE_SIZE, 0, RTE_MBUF_DEFAULT_BUF_SIZE, rte_eth_dev_socket_id(portid));
+	if(pktmbuf_pool_rx == NULL) {
+		rte_exit(EXIT_FAILURE, "Cannot init RX mbuf pool on socket %d\n", rte_eth_dev_socket_id(portid));
+	}
 
-	if(pktmbuf_pool == NULL) {
-		rte_exit(EXIT_FAILURE, "Cannot init mbuf pool on socket %d\n", rte_socket_id());
+	snprintf(s, sizeof(s), "mbuf_pool_tx");
+	pktmbuf_pool_tx = rte_pktmbuf_pool_create(s, PKTMBUF_POOL_ELEMENTS, MEMPOOL_CACHE_SIZE, 0, RTE_MBUF_DEFAULT_BUF_SIZE, rte_eth_dev_socket_id(portid));
+	if(pktmbuf_pool_tx == NULL) {
+		rte_exit(EXIT_FAILURE, "Cannot init TX mbuf pool on socket %d\n", rte_eth_dev_socket_id(portid));
 	}
 
 	// initialize the DPDK port
-	uint16_t nb_rx_queue = nr_queues;
-	uint16_t nb_tx_queue = nr_queues;
+	uint16_t nb_rx_queue = 1;
+	uint16_t nb_tx_queue = 1;
 
-	if(init_DPDK_port(portid, nb_rx_queue, nb_tx_queue, pktmbuf_pool) != 0) {
+	if(init_DPDK_port(portid, nb_rx_queue, nb_tx_queue) != 0) {
 		rte_exit(EXIT_FAILURE, "Cannot init port %"PRIu8 "\n", 0);
 	}
 }
 
 // Initialize the DPDK port
-int init_DPDK_port(uint16_t portid, uint16_t nb_rx_queue, uint16_t nb_tx_queue, struct rte_mempool *mbuf_pool) {
+int init_DPDK_port(uint16_t portid, uint16_t nb_rx_queue, uint16_t nb_tx_queue) {
 	// configurable number of RX/TX ring descriptors
 	uint16_t nb_rxd = 4096;
 	uint16_t nb_txd = 4096;
+
+	struct rte_eth_dev_info dev_info;
+	int retval = rte_eth_dev_info_get(portid, &dev_info);
+	if(retval != 0) {
+		return retval;
+	}
 
 	// get default port_conf
 	struct rte_eth_conf port_conf = {
 		.rxmode = {
 			.mq_mode = nb_rx_queue > 1 ? RTE_ETH_MQ_RX_RSS : RTE_ETH_MQ_RX_NONE,
 			.max_lro_pkt_size = RTE_ETHER_MAX_LEN,
-			.offloads = RTE_ETH_RX_OFFLOAD_CHECKSUM,
+			// .offloads = RTE_ETH_RX_OFFLOAD_CHECKSUM,
 		},
 		.rx_adv_conf = {
 			.rss_conf = {
@@ -56,12 +67,13 @@ int init_DPDK_port(uint16_t portid, uint16_t nb_rx_queue, uint16_t nb_tx_queue, 
 		},
 		.txmode = {
 			.mq_mode = RTE_ETH_MQ_TX_NONE,
-			.offloads = RTE_ETH_TX_OFFLOAD_UDP_CKSUM|RTE_ETH_TX_OFFLOAD_IPV4_CKSUM|RTE_ETH_TX_OFFLOAD_MBUF_FAST_FREE,
+			// .offloads = RTE_ETH_TX_OFFLOAD_UDP_CKSUM|RTE_ETH_TX_OFFLOAD_IPV4_CKSUM|RTE_ETH_TX_OFFLOAD_MBUF_FAST_FREE,
+			// .offloads = RTE_ETH_TX_OFFLOAD_UDP_CKSUM|RTE_ETH_TX_OFFLOAD_IPV4_CKSUM,
 		},
-	};
+	};	
 
 	// configure the NIC
-	int retval = rte_eth_dev_configure(portid, nb_rx_queue, nb_tx_queue, &port_conf);
+	retval = rte_eth_dev_configure(portid, nb_rx_queue, nb_tx_queue, &port_conf);
 	if(retval != 0) {
 		return retval;
 	}
@@ -72,17 +84,24 @@ int init_DPDK_port(uint16_t portid, uint16_t nb_rx_queue, uint16_t nb_tx_queue, 
 		return retval;
 	}
 
+	struct rte_eth_rxconf rx_conf = dev_info.default_rxconf;
+	rx_conf.offloads = port_conf.rxmode.offloads;
+	rx_conf.rx_drop_en = 1;
+
 	// setup the RX queues
 	for(int q = 0; q < nb_rx_queue; q++) {
-		retval = rte_eth_rx_queue_setup(portid, q, nb_rxd, rte_eth_dev_socket_id(portid), NULL, mbuf_pool);
+		retval = rte_eth_rx_queue_setup(portid, q, nb_rxd, rte_eth_dev_socket_id(portid), &rx_conf, pktmbuf_pool_rx);
 		if (retval < 0) {
 			return retval;
 		}
 	}
 
+	struct rte_eth_txconf tx_conf = dev_info.default_txconf;
+	tx_conf.offloads = port_conf.txmode.offloads;
+
 	// setup the TX queues
 	for(int q = 0; q < nb_tx_queue; q++) {
-		retval = rte_eth_tx_queue_setup(portid, q, nb_txd, rte_eth_dev_socket_id(portid), NULL);
+		retval = rte_eth_tx_queue_setup(portid, q, nb_txd, rte_eth_dev_socket_id(portid), &tx_conf);
 		if (retval < 0) {
 			return retval;
 		}
@@ -93,11 +112,6 @@ int init_DPDK_port(uint16_t portid, uint16_t nb_rx_queue, uint16_t nb_tx_queue, 
 	if(retval < 0) {
 		return retval;
 	}
-
-	// // enable the promiscuous mode
-	// retval = rte_eth_promiscuous_enable(portid);
-	// if(retval != 0)
-	// 	return retval;
 
 	return 0;
 }
@@ -182,7 +196,7 @@ void insert_flow(uint16_t portid, uint32_t i) {
 	struct rte_flow_action action[MAX_RTE_FLOW_ACTIONS] = {};
 
 	attr.egress = 0;
-    attr.ingress = 1;
+	attr.ingress = 1;
 
 	action[act_idx].type= RTE_FLOW_ACTION_TYPE_QUEUE;
 	action[act_idx].conf = &control_blocks[i].flow_queue_action;
@@ -226,25 +240,22 @@ void insert_flow(uint16_t portid, uint32_t i) {
 	}
 }
 
-// create DPDK rings for the RX threads
-void create_dpdk_rings() {
+// create a DPDK ring for the RX thread
+void create_dpdk_ring() {
 	char s[64];
-	for(uint32_t i = 0; i < nr_queues; i++) {
-		snprintf(s, sizeof(s), "ring_rx%u", i);
-		rx_rings[i] = rte_ring_create(s, RING_ELEMENTS, rte_socket_id(), RING_F_SP_ENQ|RING_F_SC_DEQ);
+	snprintf(s, sizeof(s), "ring_rx");
+	rx_ring = rte_ring_create(s, RING_ELEMENTS, rte_socket_id(), RING_F_SP_ENQ|RING_F_SC_DEQ);
 
-		if(rx_rings[i] == NULL) {
-			rte_exit(EXIT_FAILURE, "Cannot create the rings on socket %d\n", rte_socket_id());
-		}
+	if(rx_ring == NULL) {
+		rte_exit(EXIT_FAILURE, "Cannot create the rings on socket %d\n", rte_socket_id());
 	}
 }
 
 // clear all DPDK structures allocated
 void clean_hugepages() {
-	for(uint32_t i = 0; i < nr_queues; i++) {
-		rte_ring_free(rx_rings[i]);
-	}
+	rte_ring_free(rx_ring);
 	
-	rte_free(control_blocks);
-	rte_mempool_free(pktmbuf_pool);
+	rte_free(tcp_control_blocks);
+	rte_mempool_free(pktmbuf_pool_rx);
+	rte_mempool_free(pktmbuf_pool_tx);
 }
