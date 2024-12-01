@@ -17,7 +17,6 @@ uint64_t rate;
 uint32_t seed;
 uint64_t duration;
 uint64_t nr_flows;
-uint64_t nr_queues;
 uint16_t nr_servers;
 uint32_t min_lcores;
 uint32_t frame_size;
@@ -215,32 +214,32 @@ int main(int argc, char **argv) {
 	if(ret < 0) {
 		rte_exit(EXIT_FAILURE, "Invalid arguments\n");
 	}
-
+printf("PASSOU 1\n");
 	// initialize DPDK
 	uint16_t portid = 1;
-	init_DPDK(portid, nr_queues);
-
+	init_DPDK(portid, 1);
+printf("PASSOU 2\n");
 	// create nodes for incoming packets
 	create_incoming_array();
-
+printf("PASSOU 3\n");
 	// create flow indexes array
 	create_flow_indexes_array();
-
+printf("PASSOU 4\n");
 	// create interarrival array
 	create_interarrival_array();
-	
+printf("PASSOU 5\n");
 	// initialize the control blocks
 	init_blocks();
-
+printf("PASSOU 6\n");
 	// start client (3-way handshake for each flow)
 	start_client(portid);
-
+printf("PASSOU  7\n");
 	// create the DPDK ring for RX threads
 	create_dpdk_ring();
-
+printf("PASSOU 8\n");
 	// start RX and TX threads
 	uint32_t id_lcore = rte_lcore_id();	
-	for(int i = 0; i < nr_queues; i++) {
+	for(int i = 0; i < 1; i++) {
 		lcore_params[i].portid = portid;
 		lcore_params[i].qid = i;
 
