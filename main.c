@@ -14,6 +14,7 @@
 
 // Application parameters
 uint64_t rate;
+uint32_t seed;
 uint64_t duration;
 uint64_t nr_flows;
 uint64_t nr_queues;
