@@ -242,7 +242,6 @@ int main(int argc, char **argv) {
 	for(int i = 0; i < nr_queues; i++) {
 		lcore_params[i].portid = portid;
 		lcore_params[i].qid = i;
-		lcore_params[i].nr_elements = (rate/nr_queues) * 2 * duration;
 
 		id_lcore = rte_get_next_lcore(id_lcore, 1, 1);
 		rte_eal_remote_launch(lcore_rx_ring, (void*) &lcore_params[i], id_lcore);
